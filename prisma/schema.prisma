@@ -9,3 +9,34 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Users { // 회원 테이블
+  id                 Int         @id @default(autoincrement())
+  email              String      @unique
+  nickname           String
+  password           String
+  hashedRefreshToken String?
+  deletedAt          DateTime?   @map("deletedAt")
+  userInfo           Usersinfo?  // Users 테이블과 Usersinfo 테이블간의 관계를 정의
+
+  @@map("Users")
+}
+
+model Usersinfo { // 회원 마이페이지
+  id                 Int         @id @default(autoincrement())
+  userId             Int         // Users 테이블과 연결
+  nickname           String
+  password           String
+  birthday           Int         // 실제 사이트에서 int로 처리하고있어보임. 
+  gender             String      // 성별 : 선택지 중 하나를 선택
+  job                String      // 직업 : 복수선택이 가능하면 String[]
+  interests          String[]    // 관심분야
+
+  user               Users       @relation(fields : [userId], references : [id])
+  // 현 테이블에서 userId 라는 필드에 'Users' 테이블의 id 필드를 참조할 것입니다. 
+
+  @@map("Usersinfo")
+}
+
+
+
