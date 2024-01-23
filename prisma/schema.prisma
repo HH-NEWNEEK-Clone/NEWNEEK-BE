@@ -53,5 +53,15 @@ model UserInterest {
   @@id([userId, interestId]) // 복합 키를 ID로 사용
 }
 
+model News {
+  newsId             Int         @id @default(autoincrement())
+  image              String?
+  title              String
+  date               String?
+  category           String
+  newsCode           String
+
+  @@map("News")
+}
 
 

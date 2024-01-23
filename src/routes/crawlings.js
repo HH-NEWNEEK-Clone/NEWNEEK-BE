@@ -1,6 +1,7 @@
 import express from "express";
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { prisma } from "../utils/index.js";
 
 const getHTML = async (URL, keyword) => {
   try {
@@ -124,7 +125,18 @@ const parsingSearch = async (keyword) => {
   // return courses;
 };
 
-
+const objects ={
+  "economy": "경제",
+  "politics": "정치",
+  "world": "세계",
+  "tech": "테크",
+  "labor": "노동",
+  "environment": "환경",
+  "social-rights": "인권",
+  "domestic-issue": "사회",
+  "culture": "문화",
+  "life": "라이프"
+}
 
 const router = express.Router();
 
@@ -132,7 +144,15 @@ const router = express.Router();
 router.get("/tag/:category", async (req, res, next) => {
   try {
     const { category } = req.params;
-    const data = await parsingCategory(category);
+    const findCategory = objects[category];
+    if(!findCategory){
+      return res.status(404).json({errorMessage: "존재하지 않는 카테고리입니다."})
+    }
+    const data = await prisma.news.findMany({
+      where: {category: findCategory},
+      orderBy: {date: "desc"},
+      take: 12,
+    })
 
     return res.status(200).json({ data: data });
   } catch (error) {
@@ -155,9 +175,17 @@ router.get("/news/:newsId", async (req, res, next) => {
 // 메인(전체) 페이지 조회하여 전체 데이터를 가져오는 API
 router.get("/news", async (req, res, next) => {
   try {
-    const data = await parsingMain();
+    const data = await prisma.news.findMany({
+      orderBy:{
+        date: 'desc',
+      },
+      take: 12,
+    })
 
-    return res.status(200).json({ data: data });
+    const organizedData = {
+      "news": data
+    }
+    return res.status(200).json({ data: organizedData });
   } catch (error) {
     console.log(error);
   }
@@ -170,6 +198,27 @@ router.get("/news/find/search", async (req, res, next) => {
     const data = await parsingSearch(keyword);
 
     return res.status(201).json({ data: data });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+// 카테고리별로 DB에 뉴스를 저장하는 API
+router.get("/news/upload/:category", async (req, res, next) => {
+  try {
+    const { category } = req.params;
+    const data = await parsingCategory(category);
+    const existingNews = await prisma.news.findMany({
+      select: {
+        newsCode: true,
+      },
+    });
+
+    const existingNewsData = new Set(existingNews.map(itm => itm.newsCode));
+    const filteredData = data.filter(itm => !existingNewsData.has(itm.newsCode));
+    await prisma.news.createMany({data: filteredData})
+
+    return res.status(201).json({ message: "DB에 해당 카테고리 데이터가 저장되었습니다." });
   } catch (error) {
     console.log(error);
   }
