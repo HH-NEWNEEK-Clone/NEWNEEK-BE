@@ -14,13 +14,8 @@
     "bcrypt": "^5.1.1",
     "cheerio": "^1.0.0-rc.12",
     "cookie-parser": "^1.4.6",
-<<<<<<< HEAD
     "cors": "^2.8.5",
     "dotenv": "^16.3.2",
-=======
-    "dom-parser": "^1.1.5",
-    "dotenv": "^16.3.1",
->>>>>>> acefea85caded01445ec060bcd5d89335e7b8aa3
     "express": "^4.18.2",
     "express-session": "^1.17.3",
     "joi": "^17.12.0",
