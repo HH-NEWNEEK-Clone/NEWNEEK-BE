@@ -28,7 +28,7 @@ usersRouter.post("/sign-up", async (req, res, next) => {
         }
 
         // 닉네임 중복 체크
-        const existingNickname = await prisma.users.findUnique({ where: { nickname } });
+        const existingNickname = await prisma.users.findFirst({ where: { nickname } });
         if (existingNickname) {
             return res.status(409).json({ message: "중복된 닉네임입니다." })
         }
