@@ -23,15 +23,15 @@ export default async function (req, res, next) {
 
         const username = verifyAccessToken.username;
 
-        const member = await prisma.Members.findFirst({
+        const user = await prisma.Users.findFirst({
             where: { username },
         });
 
-        if (!member) {
+        if (!user) {
             throw new Error(" 토큰 사용자가 존재 하지 않습니다. ");
         }
 
-        req.member = member;
+        req.user = user;
 
         next();
 

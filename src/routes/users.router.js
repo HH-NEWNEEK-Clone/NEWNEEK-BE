@@ -21,13 +21,13 @@ usersRouter.post("/sign-up", async (req, res, next) => {
         const { email, nickname, password } = await userSchema.validateAsync(req.body);
 
         // 이메일 중복 체크
-        const exisingUser = await prisma.users.findUnique({ where: { email } });
+        const exisingUser = await prisma.Users.findUnique({ where: { email } });
         if (exisingUser) {
             return res.status(409).json({ message: "중복된 이메일입니다." })
         }
 
         // 닉네임 중복 체크
-        const existingNickname = await prisma.users.findFirst({ where: { nickname } });
+        const existingNickname = await prisma.Users.findFirst({ where: { nickname } });
         if (existingNickname) {
             return res.status(409).json({ message: "중복된 닉네임입니다." })
         }
@@ -54,7 +54,7 @@ usersRouter.post("/sign-in", async (req, res, next) => {
         // 유효성 검사 시 핸들링에 따라 에러를 처리합니다. 
         if (!email || !password) throw { name: "ValidationError" };
 
-        const user = await prisma.user.findFirst({ where: { email } });
+        const user = await prisma.Users.findFirst({ where: { email } });
         if (!user) throw { name: "NoneData" };
         if (email !== user.email) throw { name: "EmailError" };
 
@@ -104,7 +104,7 @@ usersRouter.post("/refresh", async (req, res, next) => {
 
         const decodedInfo = decodedAccessToken(accessToken);
 
-        const user = await prisma.users.findFirst({
+        const user = await prisma.Users.findFirst({
             where: { email: decodedInfo.email },
         });
 
@@ -131,7 +131,7 @@ usersRouter.post("/refresh", async (req, res, next) => {
         }
 
         if (verifyRefreshToken == "jwt expired") {
-            await prisma.users.update({
+            await prisma.Users.update({
                 where: { id: user.id },
                 data: {
                     hashedRefreshToken: null,
@@ -147,7 +147,7 @@ usersRouter.post("/refresh", async (req, res, next) => {
         const salt = bcrypt.genSaltSync(parseInt(process.env.BCRYPT_SALT));
         const hashedRefreshToken = bcrypt.hashSync(myNewRefreshToken, salt);
 
-        await prisma.users.update({
+        await prisma.Users.update({
             where: { id: user.id },
             data: {
                 hashedRefreshToken,
