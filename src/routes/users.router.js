@@ -55,13 +55,14 @@ usersRouter.post("/sign-in", async (req, res, next) => {
         if (!email || !password) throw { name: "ValidationError" };
 
         const user = await prisma.user.findFirst({ where: { email } });
-        if (!user) throw { name: "NoneData" };
-        if (email !== user.email) throw { name: "EmailError" };
-
+        if (!user || email !== user.email) {
+            return res.status(400).json({ errorMessage })
+        }
+        
         // 해시된 비밀번호가 일치하는지 확인합니다.
         const checkPassword = await bcrypt.compare(password, user.password);
         if (!checkPassword) {
-            return res.status(400).json({ errorMessage: "비밀번호가 일치하지 않습니다." });
+            return res.status(409).json({ errorMessage });
         }
 
         // Users 테이블의 사용자 email을 기반으로 accessToken 발급
