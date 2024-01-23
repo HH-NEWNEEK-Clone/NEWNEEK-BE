@@ -4,7 +4,6 @@ import * as bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { prisma } from "../utils/index.js";
 import userMiddleware from "../middlewares/user.middleware.js";
-// import { Scheduler } from "aws-sdk";
 
 const usersRouter = express.Router()
 
