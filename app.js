@@ -10,17 +10,29 @@ import session from 'express-session';
 const app = express()
 const port = 3000
 
+const whitelist = ['http://example1.com', 'http://example2.com']
+var corsOptions = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  }
+}
+
+
 app.use(cors());
+
 app.use(express.json());
 app.use(cookieParser());
 
-
 app.use(
     session({
-        secret: 'process.env.MY_SECRET_KEY',
+        secret: process.env.MY_SECRET_KEY,
         resave: false,
         saveUninitialized: false,
-        cookie: { secure: true }
+        // cookie: { secure: true }
     })
 );
 
@@ -32,8 +44,7 @@ const router = express.Router();
 router.get("/", (req, res) => {
     return res.json({ message: "hello world!!" })
 })
-app.use("/api", [crawlingCategory, sendEmail]);
-app.use("/api", [userRouter]);
+app.use("/api", [crawlingCategory, sendEmail, userRouter]);
 app.use(errorHandlingMiddleware);
 
 app.listen(port, () => {
