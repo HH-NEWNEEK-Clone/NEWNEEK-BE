@@ -6,6 +6,52 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model Users { // 회원 테이블
+  id                 Int         @id @default(autoincrement())
+  email              String      @unique
+  nickname           String      @unique
+  password           String
+  hashedRefreshToken String?
+  deletedAt          DateTime?   @map("deletedAt")
+  userInfo           Usersinfo?  // Users 테이블과 Usersinfo 테이블간의 관계를 정의
+
+  @@map("Users")
+}
+
+model Usersinfo { // 회원 마이페이지
+  id                 Int         @id @default(autoincrement())
+  userId             Int         @unique // Users 테이블과 연결
+  nickname           String
+  password           String
+  birthday           Int         // 실제 사이트에서 int로 처리하고있어보임. 
+  gender             String      // 성별 : 선택지 중 하나를 선택
+  job                String      // 직업 : 복수선택이 가능하면 String[]
+  userInterests      UserInterest[]    // 관심분야
+
+  user               Users       @relation(fields : [userId], references : [id])
+  // 현 테이블에서 userId 라는 필드에 'Users' 테이블의 id 필드를 참조할 것입니다. 
+
+  @@map("Usersinfo")
+}
+
+model Interest {
+  id                 Int         @id @default(autoincrement())
+  name               String      // 관심 분야 이름
+  userInterests      UserInterest[] // 관심 분야와 사용자의 관계
+}
+
+model UserInterest {
+  userId             Int
+  interestId         Int
+  user               Usersinfo   @relation(fields: [userId], references: [id])
+  interest           Interest    @relation(fields: [interestId], references: [id])
+
+  @@id([userId, interestId]) // 복합 키를 ID로 사용
+}
+
+
+
