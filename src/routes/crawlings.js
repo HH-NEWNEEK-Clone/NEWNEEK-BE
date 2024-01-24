@@ -94,28 +94,6 @@ const parsingNewsDetail = async (keyword) => {
   return news;
 };
 
-const parsingSearch = async (keyword) => {
-  const html = await getHTML("https://newneek.co/search/posts?keyword=", keyword);
-  const $ = cheerio.load(html);
-  const $courseList = $(".card");
-  console.log(html);
-
-  // let courses = [];
-  // $courseList.each((idx, module) => {
-  //   const href = $(module).attr("href");
-  //   courses.push({
-  //     image: $(module).find(".card-thumbnail > img").attr("src"),
-  //     title: $(module)
-  //       .find(".card-title")
-  //       .text()
-  //       .replace(/[^\w\sㄱ-ㅎ가-힣]/gi, ""),
-  //     date: $(module).find(".card-date").text(),
-  //     category: $(module).find(".card-category").text(),
-  //     newsCode: href.slice(6),
-  //   });
-  // });
-  // return courses;
-};
 
 const objects ={
   "economy": "경제",
@@ -208,9 +186,25 @@ router.get("/news", async (req, res, next) => {
 router.get("/news/find/search", async (req, res, next) => {
   try {
     const { keyword } = req.body;
-    const data = await parsingSearch(keyword);
 
-    return res.status(201).json({ data: data });
+    if(!keyword){
+      return res.status(401).json({errorMessage: "검색어를 입력해주세요."})
+    }
+
+    const relatedNews = await prisma.news.findMany({
+      where: {
+        OR: [
+          {category: {contains: keyword}},
+          {title: {contains: keyword}},
+        ],
+      },
+      orderBy:{
+        date: 'desc',
+      },
+      take: 8,
+    })
+
+    return res.status(201).json({ data: relatedNews });
   } catch (error) {
     console.log(error);
   }
@@ -245,10 +239,28 @@ router.get("/news/upload/bycode/:newsCode", async (req, res, next) => {
       where: {NewsCode: newsCode},
     })
     if(existingDetailNews){
-      return res.status(404).json({errorMessaga: "해당 뉴스는 이미 DB에 저장되어 있습니다."})
+      return res.status(404).json({errorMessage: "해당 뉴스는 이미 DB에 저장되어 있습니다."})
     }
+
+    const existingInNews = await prisma.news.findFirst({
+      where: {newsCode: newsCode},
+    })
     
     const data = await parsingNewsDetail(newsCode);
+    
+    if(!existingInNews){
+      console.log('카테고리용 저장 실시')
+      await prisma.news.create({
+        data: {
+          image: data.image,
+          title: data.title,
+          date: data.date,
+          category: data.category,
+          newsCode: newsCode,
+        },
+      })
+      console.log('카테고리용 저장')
+    }    
     
     await prisma.eachNews.create({
       data:{
@@ -261,8 +273,15 @@ router.get("/news/upload/bycode/:newsCode", async (req, res, next) => {
         hashTag: data.hashTag,
       }
     });
+    
 
-    return res.status(201).json({ message: "DB에 해당 카테고리 데이터가 저장되었습니다." });
+    if(existingInNews){
+      return res.status(405).json({errorMessage: "세부 내용은 없어서 저장하였으나, 카드 정보는 DB에 있어서 넣지 않았습니다."})
+    }
+
+    
+
+    return res.status(201).json({ message: "DB에 해당 카테고리의 세부 내용 및 카드 데이터가 저장되었습니다." });
   } catch (error) {
     console.log(error);
   }
