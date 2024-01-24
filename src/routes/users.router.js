@@ -2,7 +2,6 @@ import express from "express";
 import Joi from "joi";
 import * as bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
-import { prisma } from "../utils/index.js";
 import userMiddleware from "../middlewares/user.middleware.js";
 
 const usersRouter = express.Router()

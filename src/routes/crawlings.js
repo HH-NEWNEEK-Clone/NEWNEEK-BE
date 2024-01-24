@@ -80,19 +80,11 @@ const parsingNewsDetail = async (keyword) => {
   const hashArray = hashByClass.map((idx, ele) => $(ele).text()).get();
 
   const context = $(".post-body");
-  const contextBy = context
-    .find("p, h2")
-    .map((idx, ele) => {
-      const classify = ele.tagName === "p" ? "본문" : "소제목";
-      const text = $(ele).text();
-      const line = { [classify]: text };
-      return line;
-    })
-    .get();
+  const contextBy = context.html();
 
   let news = {};
-  news.article = {
-    cateory: theNews.find(".post-head-runninghead").text(),
+  news = {
+    category: theNews.find(".post-head-runninghead").text(),
     title: theNews.find(".post-head-headline").text(),
     date: theNews.find(".post-head-date").text(),
     image: theNews.find(".post-featured > img").attr("src"),
@@ -164,9 +156,30 @@ router.get("/tag/:category", async (req, res, next) => {
 router.get("/news/:newsId", async (req, res, next) => {
   try {
     const { newsId } = req.params;
-    const data = await parsingNewsDetail(newsId);
+    const existingDetailNews = await prisma.eachNews.findFirst({
+      where: {NewsCode: newsId},
+    })
+    if(!existingDetailNews){
+      const data = await parsingNewsDetail(newsId);
+      
+      await prisma.eachNews.create({
+        data:{
+          NewsCode: newsId,
+          category: data.category,
+          title: data.title,
+          date: data.date,
+          image: data.image,
+          content: data.content,
+          hashTag: data.hashTag,
+        }
+      });
+      
+      return res.status(202).json({data: data})
+      
+    }else{
+      return res.status(201).json({data: existingDetailNews});
+    }
 
-    return res.status(201).json({ data: data });
   } catch (error) {
     console.log(error);
   }
@@ -217,6 +230,37 @@ router.get("/news/upload/:category", async (req, res, next) => {
     const existingNewsData = new Set(existingNews.map(itm => itm.newsCode));
     const filteredData = data.filter(itm => !existingNewsData.has(itm.newsCode));
     await prisma.news.createMany({data: filteredData})
+
+    return res.status(201).json({ message: "DB에 해당 카테고리 데이터가 저장되었습니다." });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+// NewCode기준으로 DB에 세부 뉴스를 저장하는 API
+router.get("/news/upload/bycode/:newsCode", async (req, res, next) => {
+  try {
+    const { newsCode } = req.params;
+    const existingDetailNews = await prisma.eachNews.findFirst({
+      where: {NewsCode: newsCode},
+    })
+    if(existingDetailNews){
+      return res.status(404).json({errorMessaga: "해당 뉴스는 이미 DB에 저장되어 있습니다."})
+    }
+    
+    const data = await parsingNewsDetail(newsCode);
+    
+    await prisma.eachNews.create({
+      data:{
+        NewsCode: newsCode,
+        category: data.category,
+        title: data.title,
+        date: data.date,
+        image: data.image,
+        content: data.content,
+        hashTag: data.hashTag,
+      }
+    });
 
     return res.status(201).json({ message: "DB에 해당 카테고리 데이터가 저장되었습니다." });
   } catch (error) {
