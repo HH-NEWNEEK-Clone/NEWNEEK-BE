@@ -59,9 +59,25 @@ model News {
   title              String
   date               String?
   category           String
-  newsCode           String
-
+  newsCode           String      @unique
+ 
+  eachNews           EachNews[]
+  
   @@map("News")
 }
 
+model EachNews{
+  newsId             Int         @id @default(autoincrement())
+  NewsCode           String
+  category           String
+  title              String
+  date               String
+  image              String?
+  content            String?     @db.Text
+  hashTag            Json
+
+  theNews            News        @relation(fields: [NewsCode], references: [newsCode], onDelete: Cascade)
+
+  @@map("EachNews")
+}
 
