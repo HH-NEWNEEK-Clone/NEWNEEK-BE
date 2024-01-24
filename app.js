@@ -10,8 +10,8 @@ import session from 'express-session';
 const app = express()
 const port = 3000
 
-const whitelist = ['http://example1.com', 'http://example2.com']
-var corsOptions = {
+const whitelist = ['http://localhost:3000', 'http://example2.com']
+let corsOptions = {
   origin: function (origin, callback) {
     if (whitelist.indexOf(origin) !== -1) {
       callback(null, true)
@@ -22,7 +22,7 @@ var corsOptions = {
 }
 
 
-app.use(cors());
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(cookieParser());
