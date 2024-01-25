@@ -4,6 +4,7 @@ import * as bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
 import userMiddleware from "../middlewares/user.middleware.js";
+import { prisma } from "../utils/index.js";
 
 const usersRouter = express.Router()
 
@@ -205,6 +206,23 @@ usersRouter.post("/refresh", async (req, res, next) => {
         });
     } catch (err) {
         next(err);
+    }
+});
+
+// 로그아웃 API 
+usersRouter.post('/sign-out', userMiddleware, async(req, res, next) => {
+    try {
+        if(!req.user) throw { name: "NoneData" }
+        
+        await prisma.Users.update({
+            where: { id: req.Users.id },
+            data: {
+                hashedRefreshToken: null,
+            }
+        })
+        return res.status(200).json({ message: "로그 아 웃." })
+    } catch (err) {
+        next(err)
     }
 });
 
