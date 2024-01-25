@@ -183,7 +183,7 @@ router.get("/news", async (req, res, next) => {
 });
 
 // 검색하여 뉴스 목록을 가져오는 API
-router.post("/news/find/search/", async (req, res, next) => {
+router.post("/news/find/search", async (req, res, next) => {
   try {
     const { keyword } = req.body;
 
