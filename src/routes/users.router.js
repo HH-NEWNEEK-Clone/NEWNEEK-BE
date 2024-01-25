@@ -2,6 +2,7 @@ import express from "express";
 import Joi from "joi";
 import * as bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import axios from "axios";
 import userMiddleware from "../middlewares/user.middleware.js";
 
 const usersRouter = express.Router()
@@ -44,6 +45,51 @@ usersRouter.post("/sign-up", async (req, res, next) => {
         next(err);
     }
 });
+
+
+// 소셜 로그인 API
+usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
+    try {
+      const responseUser = await axios.get("https://kapi.kakao.com/v2/user/me", {
+        headers: {
+          Authorization: `Bearer ${req.body.access_token}`,
+        },
+      });
+      const existEmil = await prisma.Users.findFirst({
+        where: { email: responseUser.data.kakao_account.email },
+      });
+      if (!existEmil) {
+        await prisma.Users.create({
+          data: { email: responseUser.data.kakao_account.email },
+        });
+      }
+      // Users 테이블의 사용자 email을 기반으로 accessToken 발급
+      const accessToken = createAccessToken(responseUser.data.kakao_account.email);
+  
+      // Users 테이블의 사용자 email을 기반으로 refreshToken 발급
+      const refreshToken = createRefreshToken(responseUser.data.kakao_account.email);
+  
+      // refreshToken을 해시화
+      const salt = bcrypt.genSaltSync(parseInt(process.env.BCRYPT_SALT));
+      const hashedRefreshToken = bcrypt.hashSync(refreshToken, salt);
+  
+      // users 테이블에서 id 필드를 찾아 user.id와 일치한다면 hashed... 필드를 업데이트합니다.
+      await prisma.users.update({
+          where: { email: responseUser.data.kakao_account.email }, // { 테이블에 저장된 id : 로그인한 id } 일치하면 아래필드 업데이트
+      data: { hashedRefreshToken },
+      });
+      res.cookie("refreshToken", `Bearer ${refreshToken}`, {
+        secure: true, // https 환경에서만 전송됨.
+      });
+  
+      return res.status(200).json({
+        message: "로그인에 성공하였습니다.",
+        data: { accessToken, refreshToken },
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
 
 // 로그인 api
 usersRouter.post("/sign-in", async (req, res, next) => {
