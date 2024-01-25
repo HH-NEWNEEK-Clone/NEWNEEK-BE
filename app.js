@@ -23,8 +23,8 @@ const port = 3000
 
 
 app.use(cors({
-    origin: '*',
-    // credential: ?
+    origin: 'http://localhost:3000',
+    credentials: true
 }));
 
 app.use(express.json());
@@ -35,7 +35,7 @@ app.use(
         secret: process.env.MY_SECRET_KEY,
         resave: false,
         saveUninitialized: false,
-        // cookie: { secure: true }
+        cookie: { secure: true }
     })
 );
 
