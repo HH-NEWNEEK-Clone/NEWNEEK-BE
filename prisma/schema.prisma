@@ -13,8 +13,8 @@ datasource db {
 model Users { // 회원 테이블
   id                 Int         @id @default(autoincrement())
   email              String      @unique
-  nickname           String      @unique
-  password           String
+  nickname           String?
+  password           String?
   hashedRefreshToken String?
   deletedAt          DateTime?   @map("deletedAt")
   userInfo           Usersinfo?  // Users 테이블과 Usersinfo 테이블간의 관계를 정의
