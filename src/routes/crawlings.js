@@ -121,7 +121,7 @@ router.get("/tag/:category", async (req, res, next) => {
     const data = await prisma.news.findMany({
       where: {category: findCategory},
       orderBy: {date: "desc"},
-      take: 12,
+      take: 30,
     })
 
     return res.status(200).json({ data: data });
@@ -170,7 +170,7 @@ router.get("/news", async (req, res, next) => {
       orderBy:{
         date: 'desc',
       },
-      take: 12,
+      take: 30,
     })
 
     const organizedData = {
@@ -201,7 +201,7 @@ router.post("/news/find/search", async (req, res, next) => {
       orderBy:{
         date: 'desc',
       },
-      take: 8,
+      take: 30,
     })
 
     return res.status(201).json({ data: relatedNews });
