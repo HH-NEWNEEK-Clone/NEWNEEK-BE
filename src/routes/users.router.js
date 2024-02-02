@@ -3,10 +3,12 @@ import Joi from "joi";
 import * as bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
+// import nunjucks from "nunjucks";
 import userMiddleware from "../middlewares/user.middleware.js";
 import { prisma } from "../utils/index.js";
 
 const usersRouter = express.Router()
+
 
 // 유효성 검사
 const userSchema = Joi.object({
@@ -91,6 +93,32 @@ usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
       next(err);
     }
   });
+
+usersRouter.get("/auth/kakao/callback", async (req, res) => {
+    //console.log(req.query.code);
+    try {
+        //access토큰을 받기 위한 코드
+      const response = await axios.post(
+        "https://kauth.kakao.com/oauth/token",
+        {
+          grant_type: "authorization_code", //특정 스트링
+          client_id: kakao.clientID,
+          client_secret: kakao.clientSecret,
+          redirect_uri: kakao.redirectUri,
+            code: req.query.code, //결과값을 반환했다. 안됐다.
+        },
+        {
+          headers: {
+            "content-type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+      return res.json({ data:response.data})
+    } catch (e) {
+      console.log(e);
+    }
+  });
+
 
 // 로그인 api
 usersRouter.post("/sign-in", async (req, res, next) => {
