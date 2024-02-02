@@ -21,7 +21,6 @@ const port = 3000
 //   }
 // }
 
-
 app.use(cors({
     origin: '*',
 }));
@@ -32,7 +31,8 @@ app.use(cookieParser());
 app.use(
     session({
         secret: "ym-secret-key",
-        resave: false,
+        resave:true,
+        secure:false,
         saveUninitialized: false,
         // cookie: { 
         //     secure: true 
