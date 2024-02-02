@@ -80,7 +80,7 @@ usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
       data: { hashedRefreshToken },
       });
       res.cookie("refreshToken", `Bearer ${refreshToken}`, {
-        secure: true, // https 환경에서만 전송됨.
+        // secure: true, // https 환경에서만 전송됨.
       });
   
       return res.status(200).json({
