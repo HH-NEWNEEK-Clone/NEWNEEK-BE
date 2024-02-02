@@ -53,6 +53,8 @@ usersRouter.post("/sign-up", async (req, res, next) => {
 // 소셜 로그인 API
 usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
     try {
+        const code = req.body.code;
+        console.log(code)
       const responseUser = await axios.get("https://kapi.kakao.com/v2/user/me", {
         headers: {
           Authorization: `Bearer ${req.body.access_token}`,
@@ -94,30 +96,47 @@ usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
     }
   });
 
-usersRouter.get("/auth/kakao/callback", async (req, res) => {
-    //console.log(req.query.code);
-    try {
+//   const response = await axios.post(
+//     "https://kauth.kakao.com/oauth/token",
+//     {
+//       grant_type: "authorization_code", //특정 스트링
+//       client_id: kakao.clientID,
+//       client_secret: kakao.clientSecret,
+//       redirect_uri: kakao.redirectUri,
+//         code: req.query.code, //결과값을 반환했다. 안됐다.
+//     },
+//     {
+//       headers: {
+//         "content-type": "application/x-www-form-urlencoded",
+//       },
+//     }
+//   );
+
+// 이게 추가 한 부분.
+// usersRouter.get("/auth/kakao/callback", async (req, res) => {
+//     //console.log(req.query.code);
+//     try {
         //access토큰을 받기 위한 코드
-      const response = await axios.post(
-        "https://kauth.kakao.com/oauth/token",
-        {
-          grant_type: "authorization_code", //특정 스트링
-          client_id: kakao.clientID,
-          client_secret: kakao.clientSecret,
-          redirect_uri: kakao.redirectUri,
-            code: req.query.code, //결과값을 반환했다. 안됐다.
-        },
-        {
-          headers: {
-            "content-type": "application/x-www-form-urlencoded",
-          },
-        }
-      );
-      return res.json({ data:response.data})
-    } catch (e) {
-      console.log(e);
-    }
-  });
+//       const response = await axios.post(
+//         "https://kauth.kakao.com/oauth/token",
+//         {
+//           grant_type: "authorization_code", //특정 스트링
+//           client_id: kakao.clientID,
+//           client_secret: kakao.clientSecret,
+//           redirect_uri: kakao.redirectUri,
+//             code: req.query.code, //결과값을 반환했다. 안됐다.
+//         },
+//         {
+//           headers: {
+//             "content-type": "application/x-www-form-urlencoded",
+//           },
+//         }
+//       );
+//       return res.json({ data:response.data})
+//     } catch (e) {
+//       console.log(e);
+//     }
+//   });
 
 
 // 로그인 api
