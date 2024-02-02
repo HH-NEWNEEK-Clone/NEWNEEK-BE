@@ -8,7 +8,7 @@ import cors from "cors";
 import session from 'express-session';
 
 const app = express()
-const port = 3001
+const port = 3000
 
 // const whitelist = ['http://localhost:3000', 'http://example2.com']
 // let corsOptions = {
@@ -47,9 +47,10 @@ app.use(express.urlencoded({ extended: true }));
 
 const router = express.Router();
 
-router.get("/", (req, res) => {
-    return res.json({ message: "hello world!!" })
+app.get("/", (req, res) => {
+    return res.send("okay")
 })
+
 app.use("/api", [crawlingCategory, sendEmail, userRouter]);
 app.use(errorHandlingMiddleware);
 
