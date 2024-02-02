@@ -32,9 +32,9 @@ app.use(
         secret: process.env.MY_SECRET_KEY,
         resave: false,
         saveUninitialized: false,
-        cookie: { 
-            secure: true 
-        }
+        // cookie: { 
+        //     secure: true 
+        // }
     })
 );
 
