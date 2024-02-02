@@ -20,7 +20,7 @@ usersRouter.post("/sign-up", async (req, res, next) => {
     try {
         // 요청받은 데이터의 유효성 검사
         const { email, nickname, password } = await userSchema.validateAsync(req.body);
-
+        
         // 이메일 중복 체크
         const exisingUser = await prisma.Users.findUnique({ where: { email } });
         if (exisingUser) {
