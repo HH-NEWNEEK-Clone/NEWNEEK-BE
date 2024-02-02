@@ -22,6 +22,7 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^1.4.5-lts.1",
     "multer-s3": "^3.0.1",
+    "node-fecth": "^0.0.1-security",
     "nodemailer": "^6.9.8",
     "nodemailer-express-handlebars": "^6.1.0",
     "prisma": "^5.8.1",

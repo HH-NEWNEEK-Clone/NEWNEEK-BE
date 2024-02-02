@@ -8,7 +8,7 @@ import cors from "cors";
 import session from 'express-session';
 
 const app = express()
-const port = 3000
+const port = 3001
 
 // const whitelist = ['http://localhost:3000', 'http://example2.com']
 // let corsOptions = {
@@ -22,14 +22,16 @@ const port = 3000
 // }
 
 
-app.use(cors());
+app.use(cors({
+    origin: '*',
+}));
 
 app.use(express.json());
 app.use(cookieParser());
 
 app.use(
     session({
-        secret: process.env.MY_SECRET_KEY,
+        secret: "ym-secret-key",
         resave: false,
         saveUninitialized: false,
         // cookie: { 
@@ -37,6 +39,8 @@ app.use(
         // }
     })
 );
+
+// console.log(MY_SECRET_KEY)
 
 
 app.use(express.urlencoded({ extended: true }));
