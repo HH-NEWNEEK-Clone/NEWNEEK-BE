@@ -110,6 +110,7 @@ const REST_API_KEY = '4d53af679065e77f93be56fcdf730e1e';
 
 usersRouter.get('/auth/kakao/callback', async (req, res) => {
     const { code } = req.query;
+    console.log(code)
     try {
       const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', {
         grant_type: 'authorization_code',
