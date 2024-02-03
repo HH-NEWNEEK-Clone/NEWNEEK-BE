@@ -1,6 +1,7 @@
 import express from 'express';
 import axios from 'axios';
 import userRouter from './src/routes/users.router.js';
+import kakaoRouter from './src/routes/kakao.js'
 import errorHandlingMiddleware from "./src/middlewares/error.handling.middleware.js";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -63,7 +64,7 @@ app.get("/", (req, res) => {
     return res.send("okay");
 });
 
-app.use("/api", [userRouter]);
+app.use("/api", [userRouter, kakaoRouter]);
 app.use(errorHandlingMiddleware);
 
 app.listen(port, () => {
