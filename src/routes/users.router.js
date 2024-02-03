@@ -106,7 +106,7 @@ usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
 // const PORT = process.env.PORT || 3000;
 const REDIRECT_URI = 'http://54.250.244.188/api/auth/kakao/callback';
 const REST_API_KEY = '4d53af679065e77f93be56fcdf730e1e';
-const KAKAO_CLIENT_SECRET = 'W8gUjTyZavUQHo68VuCdK7pE0aZs2TeY'; // 카카오 개발자 사이트에서 발급받은 시크릿 키
+// const KAKAO_CLIENT_SECRET = 'W8gUjTyZavUQHo68VuCdK7pE0aZs2TeY'; // 카카오 개발자 사이트에서 발급받은 시크릿 키
 
 usersRouter.get('/auth/kakao/callback', async (req, res) => {
     const { code } = req.query;
@@ -114,14 +114,15 @@ usersRouter.get('/auth/kakao/callback', async (req, res) => {
         const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', {
             grant_type: 'authorization_code',
             client_id: REST_API_KEY,
-            client_secret: KAKAO_CLIENT_SECRET,
+            // client_secret: KAKAO_CLIENT_SECRET,
             redirect_uri: REDIRECT_URI,
             code
         });         
         const accessToken = tokenResponse.data.access_token;
         const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
             headers: {
-                Authorization: `Bearer ${accessToken}`
+                "Content-Type": "application/x-www-form-urlencoded",
+                Authorization: `Bearer ${accessToken}`,
             }
         });
         // 여기서 사용자 정보(userResponse.data)를 처리합니다.
