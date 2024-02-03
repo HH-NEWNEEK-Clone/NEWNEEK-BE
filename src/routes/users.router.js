@@ -56,31 +56,67 @@ usersRouter.post("/sign-up", async (req, res, next) => {
 const REDIRECT_URI = 'http://54.250.244.188/api/auth/kakao/callback';
 const REST_API_KEY = '4d53af679065e77f93be56fcdf730e1e';
 
-// 소셜 로그인 API
-// 카카오 로그인 요청 처리
+// Kakao Callback 처리
+// Frontend에서 코드를 받아서 Kakao API로 AccessToken을 요청합니다.
+usersRouter.get('/auth/kakao/callback', async (req, res) => {
+  const { code } = req.query;
+  try {
+    // Kakao API로부터 AccessToken을 받아옵니다.
+    const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', {
+      grant_type: 'authorization_code',
+      client_id: REST_API_KEY,
+      redirect_uri: REDIRECT_URI,
+      code
+    });
+
+    // AccessToken으로 Kakao API로 사용자 정보를 요청합니다.
+    const accessToken = tokenResponse.data.access_token;
+    const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Bearer ${accessToken}`,
+      }
+    });
+
+    // 사용자 정보를 응답합니다.
+    res.json(userResponse.data);
+  } catch (error) {
+    console.error('Error exchanging code for access token', error.response.data);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+
+// Kakao 로그인 요청 처리
+// Frontend에서 넘겨준 access_token을 req.body에서 가져옵니다.
 usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
   try {
     const { access_token } = req.body;
 
+    // Kakao API로부터 유저 정보를 가져옵니다.
     const responseUser = await axios.get("https://kapi.kakao.com/v2/user/me", {
       headers: {
         Authorization: `Bearer ${access_token}`,
       },
     });
 
+    // 가져온 이메일로 기존 유저가 있는지 확인합니다.
     const existingEmail = await prisma.Users.findFirst({
       where: { email: responseUser.data.kakao_account.email },
     });
 
     if (!existingEmail) {
+      // 기존 유저가 없다면 새로운 유저를 생성합니다.
       await prisma.Users.create({
         data: { email: responseUser.data.kakao_account.email },
       });
     }
 
+    // 새로운 AccessToken 및 RefreshToken 생성
     const accessToken = createAccessToken(responseUser.data.kakao_account.email);
     const refreshToken = createRefreshToken(responseUser.data.kakao_account.email);
 
+    // RefreshToken을 해싱하여 DB에 저장
     const salt = bcrypt.genSaltSync(parseInt(process.env.BCRYPT_SALT));
     const hashedRefreshToken = bcrypt.hashSync(refreshToken, salt);
 
@@ -89,10 +125,12 @@ usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
       data: { hashedRefreshToken },
     });
 
+    // RefreshToken을 Cookie에 설정
     res.cookie("refreshToken", `Bearer ${refreshToken}`, {
       secure: true,
     });
 
+    // 성공 응답
     return res.status(200).json({
       message: "로그인에 성공하였습니다.",
       data: { accessToken, refreshToken },
@@ -103,31 +141,9 @@ usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
   }
 });
 
-usersRouter.get('/auth/kakao/callback', async (req, res) => {
-  const { code } = req.query;
-  try {
-    const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', {
-      grant_type: 'authorization_code',
-      client_id: REST_API_KEY,
-      redirect_uri: REDIRECT_URI,
-      code
-    });
 
-    const accessToken = tokenResponse.data.access_token;
 
-    const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Authorization: `Bearer ${accessToken}`,
-      }
-    });
 
-    res.json(userResponse.data);
-  } catch (error) {
-    console.error('Error exchanging code for access token', error.response.data);
-    res.status(500).json({ error: 'Internal server error' });
-  }
-});
 // 받아오는 값 ?
 // usersRouter.get("kakaologin", async (req, res) => {
 //   let REST_API_KEY = "4d53af679065e77f93be56fcdf730e1e";
