@@ -31,31 +31,33 @@ const REDIRECT_URI = 'http://54.250.244.188/api/auth/kakao/callback';
 const REST_API_KEY = '4d53af679065e77f93be56fcdf730e1e';
 
 // 프론트엔드에서 전달받은 `access_token` 값
-    const { access_token } = req.body
+app.post('/api/auth/kakao/callback', async (req, res) => {
+    const { access_token } = req.body;
 
-// Kakao API로부터 유저 정보를 가져오기 위한 요청
-try {
-  const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', {
-    grant_type: 'authorization_code',
-    client_id: REST_API_KEY,
-    redirect_uri: REDIRECT_URI,
-    code: access_token,
-  });
+    // Kakao API로부터 유저 정보를 가져오기 위한 요청
+    try {
+        const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', {
+            grant_type: 'authorization_code',
+            client_id: REST_API_KEY,
+            redirect_uri: REDIRECT_URI,
+            code: access_token,
+        });
 
-  const accessToken = tokenResponse.data.access_token;
-  const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      Authorization: `Bearer ${accessToken}`,
-    },
-  });
+        const accessToken = tokenResponse.data.access_token;
+        const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
 
-  console.log('User Info:', userResponse.data);
-} catch (error) {
-  console.error('Error exchanging code for access token', error.response.data);
-}
-
-const router = express.Router();
+        console.log('User Info:', userResponse.data);
+        res.send('User Info: ' + JSON.stringify(userResponse.data));
+    } catch (error) {
+        console.error('Error exchanging code for access token', error.response.data);
+        res.status(500).send('Internal Server Error');
+    }
+});
 
 app.get("/", (req, res) => {
     return res.send("okay");
