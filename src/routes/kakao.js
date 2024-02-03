@@ -64,12 +64,12 @@ router.post('/auth/kakao/callback', async (req, res) => {
 
       const createUser = await prisma.users.create({
         data: {
-          email: userResponse.data.kakao_account.email,
-          username: userResponse.data.properties.nickname,
-          password: encryptionPassword,
-          profileImg: userResponse.data.properties.profile_image,
-          userType : 'K'
-        },
+            email: userResponse.data.kakao_account.email,
+            username: userResponse.data.properties.nickname,
+            password: encryptionPassword,
+            profileImg: userResponse.data.properties.profile_image || "", // 빈 문자열로 설정
+            userType: 'K'
+          },
       });
       const accesstoken = jwt.sign({ id: createUser.id }, key, {expiresIn: "1h"});
       const refreshtoken = jwt.sign({ id: createUser.id }, key, {expiresIn: "7d"});
