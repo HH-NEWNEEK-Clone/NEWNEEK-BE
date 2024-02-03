@@ -111,13 +111,14 @@ const REST_API_KEY = '4d53af679065e77f93be56fcdf730e1e';
 usersRouter.get('/auth/kakao/callback', async (req, res) => {
     const { code } = req.query;
     try {
-        const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', {
-            grant_type: 'authorization_code',
-            client_id: REST_API_KEY,
-            // client_secret: KAKAO_CLIENT_SECRET,
-            redirect_uri: REDIRECT_URI,
-            code
-        });         
+      const tokenResponse = await axios.post('https://kauth.kakao.com/oauth/token', {
+        grant_type: 'authorization_code',
+        client_id: REST_API_KEY,
+        // client_secret: KAKAO_CLIENT_SECRET, // 이 부분을 주석 처리 또는 제거하세요
+        redirect_uri: REDIRECT_URI,
+        code
+    });
+            
         const accessToken = tokenResponse.data.access_token;
         const userResponse = await axios.get('https://kapi.kakao.com/v2/user/me', {
             headers: {
