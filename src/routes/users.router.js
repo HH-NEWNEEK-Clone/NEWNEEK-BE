@@ -9,6 +9,10 @@ import { prisma } from "../utils/index.js";
 
 const usersRouter = express.Router();
 
+
+const REST_API_KEY = "4d53af679065e77f93be56fcdf730e1e";
+const REDIRECT_URI = "http://localhost:3000/auth/kakao/callback";
+
 // 유효성 검사
 const userSchema = Joi.object({
   email: Joi.string().email().required(),
@@ -53,12 +57,87 @@ usersRouter.post("/sign-up", async (req, res, next) => {
   }
 });
 
+usersRouter.post('/auth/kakao/callback', async (req, res) => {
+  const { code } = req.query;
+  console.log(code)
+  try {
+    // AccessToken으로 Kakao API로 사용자 정보를 요청합니다.
+    const accessToken = tokenResponse.data.access_token;
+    const response = await axios({
+      method: "POST",
+      url: "https://kauth.kakao.com/oauth/token",
+      headers: {
+        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
+      },
+
+      data: qs.stringify({
+        grant_type: "authorization_code",
+        client_id: REDIRECT_URI,
+        redirect_uri: REST_API_KEY,
+        code: code,
+      })
+    });
+
+    const { access_token } = response.data
+
+    const userResponse = await axios({
+      method: "GET",
+      url: "https://kapi.kakao.com/v2/user/me",
+      headers: {
+        Authorization: `Bearer ${access_token}`,
+      },
+    });
+    const findUser = await prisma.users.findFirst({
+      where: { email: userResponse.data.kakao_account.email },
+    });
+    if (findUser) {
+      const accessToken = jwt.sign({ id: findUser.id }, key, {
+        expiresIn: "1h",
+      })
+      const refreshToken = jwt.sign({ id: findUser.id }, key, {
+        expiresIn: "7d",
+      });
+      await client.set(`RefreshToken:${findUser.id}`, refreshToken, "EX", 7 * 24 * 60 * 60 );
+      res.setHeader("Authorization", `Bearer ${accessToken}`);
+      res.setHeader("Refreshtoken", refreshToken);
+      return res.json({ message: "done ?" });
+    } else {
+      var userResponseIdString = userResponse.data.id.toString();
+      var kakaoIdsubString = userResponseIdString.substring(0, 8);
+
+      const encryptionPassword = await bcrypt.hash(kakaoIdsubString, 10);
+
+      const createUser = await prisma.users.create({
+        data: {
+            email: userResponse.data.kakao_account.email,
+            username: userResponse.data.properties.nickname,
+            password: encryptionPassword,
+            profileImg: userResponse.data.properties.profile_image || "", // 빈 문자열로 설정
+            userType: 'K'
+          },
+      });
+      const accesstoken = jwt.sign({ id: createUser.id }, key, {expiresIn: "1h"});
+      const refreshtoken = jwt.sign({ id: createUser.id }, key, {expiresIn: "7d"});
+
+      await client.set(`RefreshToken:${createUser.id}`, refreshtoken, "EX", 7 * 24 * 60 * 60 );
+
+      res.setHeader("Authorization", `Bearer ${accesstoken}`);
+      res.setHeader("Refreshtoken", refreshtoken);
+
+      return res.json({ message: "회원가입이 완료되었습니다." });
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
 
 // Kakao 로그인 요청 처리
 // Frontend에서 넘겨준 access_token을 req.body에서 가져옵니다.
 // usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
 //   try {
 //     const { access_token } = req.body;
+//     console.log(access_token)
 
 //     // Kakao API로부터 유저 정보를 가져옵니다.
 //     const responseUser = await axios.get("https://kapi.kakao.com/v2/user/me", {
@@ -110,14 +189,17 @@ usersRouter.post("/sign-up", async (req, res, next) => {
 
 
 
-
-// 받아오는 값 ?
-// usersRouter.get("kakaologin", async (req, res) => {
-//   let REST_API_KEY = "4d53af679065e77f93be56fcdf730e1e";
-//   let REDIRECT_URI = "http://localhost:3000/auth/kakao/callback";
-
-//   let code = req.query.code;
-
+// // 받아오는 값 ?
+// module.exports = {
+//   accessToken: async (req, res) => {
+//     try{
+//       const  { code } = req.body
+//       const accessToken = await axios({
+//         url
+//       })
+//     }
+//   }
+// }
 //   axios
 //     .post("https://kauth.kakao.com/oauth/token", null, {
 //       headers: {

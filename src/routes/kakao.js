@@ -12,9 +12,9 @@ const REDIRECT_URI = 'http://54.250.244.188/api/auth/kakao/callback';
 const REST_API_KEY = '4d53af679065e77f93be56fcdf730e1e';
 
 // Kakao Callback 처리
-// Frontend에서 코드를 받아서 Kakao API로 AccessToken을 요청합니다.
 router.post('/auth/kakao/callback', async (req, res) => {
   const { code } = req.query;
+  console.log(code)
   try {
     // AccessToken으로 Kakao API로 사용자 정보를 요청합니다.
     const accessToken = tokenResponse.data.access_token;
