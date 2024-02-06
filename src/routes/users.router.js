@@ -13,7 +13,7 @@ const usersRouter = express.Router();
 const kakao = {
   clientID: "4d53af679065e77f93be56fcdf730e1e",
   clientSecret: "카카오에서 받은clientSecret",
-  redirectUri: "http://localhost:3000/auth/kakao/callback",
+  redirectUri: "http://54.250.244.188:3000/api/auth/kakao/callback",
 };
 const REST_API_KEY = "4d53af679065e77f93be56fcdf730e1e";
 const REDIRECT_URI = "http://localhost:3000/auth/kakao/callback";
