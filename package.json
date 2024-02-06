@@ -26,6 +26,8 @@
     "nodemailer": "^6.9.8",
     "nodemailer-express-handlebars": "^6.1.0",
     "nunjucks": "^3.2.4",
+    "passport": "^0.7.0",
+    "passport-kakao": "^1.0.1",
     "prisma": "^5.8.1",
     "puppeteer": "^21.7.0",
     "qs": "^6.11.2",
