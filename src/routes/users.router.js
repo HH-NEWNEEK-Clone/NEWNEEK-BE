@@ -3,18 +3,20 @@ import Joi from "joi";
 import * as bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import axios from "axios";
-// import nunjucks from "nunjucks";
+import dotenv from 'dotenv'
 import userMiddleware from "../middlewares/user.middleware.js";
 import { prisma } from "../utils/index.js";
 import qs from "qs";
+import { next } from "cheerio/lib/api/traversing.js";
 
+dotenv.config()
 const usersRouter = express.Router();
 
-const kakao = {
-  clientID: "4d53af679065e77f93be56fcdf730e1e",
-  clientSecret: "카카오에서 받은clientSecret",
-  redirectUri: "http://54.250.244.188:3000/api/auth/kakao/callback",
-};
+// const kakao = {
+//   clientID: "4d53af679065e77f93be56fcdf730e1e",
+//   clientSecret: "카카오에서 받은clientSecret",
+//   redirectUri: "http://54.250.244.188:3000/api/auth/kakao/callback",
+// };
 const REST_API_KEY = "4d53af679065e77f93be56fcdf730e1e";
 const REDIRECT_URI = "http://localhost:3000/auth/kakao/callback";
 
@@ -62,189 +64,42 @@ usersRouter.post("/sign-up", async (req, res, next) => {
   }
 });
 
-usersRouter.get("/auth/kakao/callback", async (req, res) => {
-  try {
-    const response = await axios.post(
-      "https://kauth.kakao.com/oauth/token",
-      {
-        data: qs.stringify({
-          grant_type: "authorization_code", //특정 스트링
-          client_id: kakao.clientID,
-          redirectUri: kakao.redirectUri,
-          code: req.query.code,
-        }),
-      },
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
-    );
 
-    console.log("response", response);
-    // const token = await axios({
-    //   method: "POST",
-    //   url: "https://kauth.kakao.com/oauth/token",
-    // headers: {
-    //   "Content-Type": "application/x-www-form-urlencoded",
-    // },
-    //   data: qs.stringify({
-    //     grant_type: "authorization_code", //특정 스트링
-    //     client_id: kakao.clientID,
-    //     redirectUri: kakao.redirectUri,
-    //     code: req.query.code,
-    //   }),
-    // });
+const kakao = {
+  CLIENT_ID: process.env.KAKAO_CLIENT_ID,
+  REDIRECT_URI: process.env.KAKAO_REDIECT_URI
+}
 
-    // console.log("token", token);
-  } catch (error) {
-    // res.json(err.data)
-    console.error(error);
-  }
-  let user;
-  try {
-    console.log(token); //access정보를 가지고 또 요청해야 정보를 가져올 수 있음.
-    user = await axios({
-      method: "get",
-      url: "https://kapi.kakao.com/v2/user/me",
+usersRouter.get('/auth/kakao/callback', async (req, res, next) => {
+  let token
+  try{
+    token = await axios({
+      method: 'POST',
+      url: "https://kauth.kakao.com/oauth/token",
       headers: {
-        Authorization: `Bearer ${token.data.access_token}`,
-      }, //헤더에 내용을 보고 보내주겠다.
-    });
-  } catch (e) {
-    res.json(e.data);
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      data: qs.stringify({
+        grant_type: "authorization_code",
+        client_id: kakao.CLIENT_ID,
+        redirectUri: kakao.REDIRECT_URI,
+        code: req.query.code 
+      }),
+    })
+    let user
+      user = await axios ({
+        method: "GET",
+        url: "https://kapi.kakao.com/v2/user/me",
+        headers: {
+          Authorization: `Bearer ${token.data.access_token}`,
+        },
+      })
+  } catch(err) {
+    next(err)
   }
-  console.log(user);
+})
 
-  // req.session.kakao = user.data;
-  req.session = { ["kakao"]: user.data };
 
-  res.send("success");
-});
-
-// Kakao 로그인 요청 처리
-// Frontend에서 넘겨준 access_token을 req.body에서 가져옵니다.
-// usersRouter.post("/auth/kakao/sign-in", async (req, res, next) => {
-//   try {
-//     const { access_token } = req.body;
-//     console.log(access_token)
-
-//     // Kakao API로부터 유저 정보를 가져옵니다.
-//     const responseUser = await axios.get("https://kapi.kakao.com/v2/user/me", {
-//       headers: {
-//         Authorization: `Bearer ${access_token}`,
-//       },
-//     });
-
-//     // 가져온 이메일로 기존 유저가 있는지 확인합니다.
-//     const existingEmail = await prisma.Users.findFirst({
-//       where: { email: responseUser.data.kakao_account.email },
-//     });
-
-//     if (!existingEmail) {
-//       // 기존 유저가 없다면 새로운 유저를 생성합니다.
-//       await prisma.Users.create({
-//         data: { email: responseUser.data.kakao_account.email },
-//       });
-//     }
-
-//     // 새로운 AccessToken 및 RefreshToken 생성
-//     const accessToken = createAccessToken(responseUser.data.kakao_account.email);
-//     const refreshToken = createRefreshToken(responseUser.data.kakao_account.email);
-
-//     // RefreshToken을 해싱하여 DB에 저장
-//     const salt = bcrypt.genSaltSync(parseInt(process.env.BCRYPT_SALT));
-//     const hashedRefreshToken = bcrypt.hashSync(refreshToken, salt);
-
-//     await prisma.users.update({
-//       where: { email: responseUser.data.kakao_account.email },
-//       data: { hashedRefreshToken },
-//     });
-
-//     // RefreshToken을 Cookie에 설정
-//     res.cookie("refreshToken", `Bearer ${refreshToken}`, {
-//       secure: true,
-//     });
-
-//     // 성공 응답
-//     return res.status(200).json({
-//       message: "로그인에 성공하였습니다.",
-//       data: { accessToken, refreshToken },
-//     });
-//   } catch (err) {
-//     console.error('Error during Kakao sign-in:', err);
-//     next(err);
-//   }
-// });
-
-// // 받아오는 값 ?
-// module.exports = {
-//   accessToken: async (req, res) => {
-//     try{
-//       const  { code } = req.body
-//       const accessToken = await axios({
-//         url
-//       })
-//     }
-//   }
-// }
-//   axios
-//     .post("https://kauth.kakao.com/oauth/token", null, {
-//       headers: {
-//         "Content-Type": "application/x-www-form-urlencoded",
-//       },
-//       params: {
-//         grant_type: "authorization_code",
-//         client_id: REST_API_KEY,
-//         redirect_uri: REDIRECT_URI,
-//         code: code,
-//       },
-//     })
-//     .then((response) => {
-//       console.log(response);
-//     });
-// });
-//   const response = await axios.post(
-//     "https://kauth.kakao.com/oauth/token",
-//     {
-//       grant_type: "authorization_code", //특정 스트링
-//       client_id: kakao.clientID,
-//       client_secret: kakao.clientSecret,
-//       redirect_uri: kakao.redirectUri,
-//         code: req.query.code, //결과값을 반환했다. 안됐다.
-//     },
-//     {
-//       headers: {
-//         "content-type": "application/x-www-form-urlencoded",
-//       },
-//     }
-//   );
-
-// 이게 추가 한 부분.
-// usersRouter.get("/auth/kakao/callback", async (req, res) => {
-//     //console.log(req.query.code);
-//     try {
-//access토큰을 받기 위한 코드
-//       const response = await axios.post(
-//         "https://kauth.kakao.com/oauth/token",
-//         {
-//           grant_type: "authorization_code", //특정 스트링
-//           client_id: kakao.clientID,
-//           client_secret: kakao.clientSecret,
-//           redirect_uri: kakao.redirectUri,
-//             code: req.query.code, //결과값을 반환했다. 안됐다.
-//         },
-//         {
-//           headers: {
-//             "content-type": "application/x-www-form-urlencoded",
-//           },
-//         }
-//       );
-//       return res.json({ data:response.data})
-//     } catch (e) {
-//       console.log(e);
-//     }
-//   });
 
 // 로그인 api
 usersRouter.post("/sign-in", async (req, res, next) => {
