@@ -6,16 +6,15 @@ import axios from "axios";
 // import nunjucks from "nunjucks";
 import userMiddleware from "../middlewares/user.middleware.js";
 import { prisma } from "../utils/index.js";
-import qs from 'qs'
+import qs from "qs";
 
 const usersRouter = express.Router();
 
-
 const kakao = {
-  clientID: '4d53af679065e77f93be56fcdf730e1e',
-  clientSecret: '카카오에서 받은clientSecret',
-  redirectUri: 'http://localhost:3000/auth/kakao/callback'
-}
+  clientID: "4d53af679065e77f93be56fcdf730e1e",
+  clientSecret: "카카오에서 받은clientSecret",
+  redirectUri: "http://localhost:3000/auth/kakao/callback",
+};
 const REST_API_KEY = "4d53af679065e77f93be56fcdf730e1e";
 const REDIRECT_URI = "http://localhost:3000/auth/kakao/callback";
 
@@ -63,45 +62,65 @@ usersRouter.post("/sign-up", async (req, res, next) => {
   }
 });
 
-usersRouter.get('/auth/kakao/callback', async (req, res) => {
+usersRouter.get("/auth/kakao/callback", async (req, res) => {
   try {
-    token = await axios({
-      method: 'POST',
-      url: "https://kauth.kakao.com/oauth/token",
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+    const response = await axios.post(
+      "https://kauth.kakao.com/oauth/token",
+      {
+        data: qs.stringify({
+          grant_type: "authorization_code", //특정 스트링
+          client_id: kakao.clientID,
+          redirectUri: kakao.redirectUri,
+          code: req.query.code,
+        }),
       },
-      data:qs.stringify({
-        grant_type: 'authorization_code',//특정 스트링
-        client_id:kakao.clientID,
-        redirectUri:kakao.redirectUri,
-        code:req.query.code,
-      })
-    })
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+
+    console.log("response", response);
+    // const token = await axios({
+    //   method: "POST",
+    //   url: "https://kauth.kakao.com/oauth/token",
+    // headers: {
+    //   "Content-Type": "application/x-www-form-urlencoded",
+    // },
+    //   data: qs.stringify({
+    //     grant_type: "authorization_code", //특정 스트링
+    //     client_id: kakao.clientID,
+    //     redirectUri: kakao.redirectUri,
+    //     code: req.query.code,
+    //   }),
+    // });
+
+    // console.log("token", token);
   } catch (error) {
-    res.json(err.data)
+    // res.json(err.data)
+    console.error(error);
   }
   let user;
-  try{
-      console.log(token);//access정보를 가지고 또 요청해야 정보를 가져올 수 있음.
-      user = await axios({
-          method:'get',
-          url:'https://kapi.kakao.com/v2/user/me',
-          headers:{
-              Authorization: `Bearer ${token.data.access_token}`
-          }//헤더에 내용을 보고 보내주겠다.
-      })
-  }catch(e){
-      res.json(e.data);
+  try {
+    console.log(token); //access정보를 가지고 또 요청해야 정보를 가져올 수 있음.
+    user = await axios({
+      method: "get",
+      url: "https://kapi.kakao.com/v2/user/me",
+      headers: {
+        Authorization: `Bearer ${token.data.access_token}`,
+      }, //헤더에 내용을 보고 보내주겠다.
+    });
+  } catch (e) {
+    res.json(e.data);
   }
   console.log(user);
 
-  req.session.kakao = user.data;
-  //req.session = {['kakao'] : user.data};
-  
-  res.send('success');
-})
+  // req.session.kakao = user.data;
+  req.session = { ["kakao"]: user.data };
 
+  res.send("success");
+});
 
 // Kakao 로그인 요청 처리
 // Frontend에서 넘겨준 access_token을 req.body에서 가져옵니다.
@@ -157,8 +176,6 @@ usersRouter.get('/auth/kakao/callback', async (req, res) => {
 //     next(err);
 //   }
 // });
-
-
 
 // // 받아오는 값 ?
 // module.exports = {
@@ -273,12 +290,10 @@ usersRouter.post("/sign-in", async (req, res, next) => {
       secure: true, // https 환경에서만 전송됨.
     });
 
-    return res
-      .status(200)
-      .json({
-        message: "로그인에 성공하였습니다.",
-        data: { accessToken, refreshToken },
-      });
+    return res.status(200).json({
+      message: "로그인에 성공하였습니다.",
+      data: { accessToken, refreshToken },
+    });
   } catch (err) {
     next(err);
   }
@@ -419,4 +434,3 @@ async function decodedAccessToken(accessToken) {
 }
 
 export default usersRouter;
-
