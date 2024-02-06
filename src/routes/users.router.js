@@ -6,10 +6,16 @@ import axios from "axios";
 // import nunjucks from "nunjucks";
 import userMiddleware from "../middlewares/user.middleware.js";
 import { prisma } from "../utils/index.js";
+import qs from 'qs'
 
 const usersRouter = express.Router();
 
 
+const kakao = {
+  clientID: '4d53af679065e77f93be56fcdf730e1e',
+  clientSecret: '카카오에서 받은clientSecret',
+  redirectUri: 'http://localhost:3000/auth/kakao/callback'
+}
 const REST_API_KEY = "4d53af679065e77f93be56fcdf730e1e";
 const REDIRECT_URI = "http://localhost:3000/auth/kakao/callback";
 
@@ -57,79 +63,44 @@ usersRouter.post("/sign-up", async (req, res, next) => {
   }
 });
 
-usersRouter.post('/auth/kakao/callback', async (req, res) => {
-  const { code } = req.query;
-  console.log(code)
+usersRouter.get('/auth/kakao/callback', async (req, res) => {
   try {
-    // AccessToken으로 Kakao API로 사용자 정보를 요청합니다.
-    const accessToken = tokenResponse.data.access_token;
-    const response = await axios({
-      method: "POST",
+    token = await axios({
+      method: 'POST',
       url: "https://kauth.kakao.com/oauth/token",
       headers: {
-        "content-type": "application/x-www-form-urlencoded;charset=utf-8",
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-
-      data: qs.stringify({
-        grant_type: "authorization_code",
-        client_id: REDIRECT_URI,
-        redirect_uri: REST_API_KEY,
-        code: code,
+      data:qs.stringify({
+        grant_type: 'authorization_code',//특정 스트링
+        client_id:kakao.clientID,
+        redirectUri:kakao.redirectUri,
+        code:req.query.code,
       })
-    });
-
-    const { access_token } = response.data
-
-    const userResponse = await axios({
-      method: "GET",
-      url: "https://kapi.kakao.com/v2/user/me",
-      headers: {
-        Authorization: `Bearer ${access_token}`,
-      },
-    });
-    const findUser = await prisma.users.findFirst({
-      where: { email: userResponse.data.kakao_account.email },
-    });
-    if (findUser) {
-      const accessToken = jwt.sign({ id: findUser.id }, key, {
-        expiresIn: "1h",
-      })
-      const refreshToken = jwt.sign({ id: findUser.id }, key, {
-        expiresIn: "7d",
-      });
-      await client.set(`RefreshToken:${findUser.id}`, refreshToken, "EX", 7 * 24 * 60 * 60 );
-      res.setHeader("Authorization", `Bearer ${accessToken}`);
-      res.setHeader("Refreshtoken", refreshToken);
-      return res.json({ message: "done ?" });
-    } else {
-      var userResponseIdString = userResponse.data.id.toString();
-      var kakaoIdsubString = userResponseIdString.substring(0, 8);
-
-      const encryptionPassword = await bcrypt.hash(kakaoIdsubString, 10);
-
-      const createUser = await prisma.users.create({
-        data: {
-            email: userResponse.data.kakao_account.email,
-            username: userResponse.data.properties.nickname,
-            password: encryptionPassword,
-            profileImg: userResponse.data.properties.profile_image || "", // 빈 문자열로 설정
-            userType: 'K'
-          },
-      });
-      const accesstoken = jwt.sign({ id: createUser.id }, key, {expiresIn: "1h"});
-      const refreshtoken = jwt.sign({ id: createUser.id }, key, {expiresIn: "7d"});
-
-      await client.set(`RefreshToken:${createUser.id}`, refreshtoken, "EX", 7 * 24 * 60 * 60 );
-
-      res.setHeader("Authorization", `Bearer ${accesstoken}`);
-      res.setHeader("Refreshtoken", refreshtoken);
-
-      return res.json({ message: "회원가입이 완료되었습니다." });
-    }
-  } catch (err) {
-    next(err);
+    })
+  } catch (error) {
+    res.json(err.data)
   }
-});
+  let user;
+  try{
+      console.log(token);//access정보를 가지고 또 요청해야 정보를 가져올 수 있음.
+      user = await axios({
+          method:'get',
+          url:'https://kapi.kakao.com/v2/user/me',
+          headers:{
+              Authorization: `Bearer ${token.data.access_token}`
+          }//헤더에 내용을 보고 보내주겠다.
+      })
+  }catch(e){
+      res.json(e.data);
+  }
+  console.log(user);
+
+  req.session.kakao = user.data;
+  //req.session = {['kakao'] : user.data};
+  
+  res.send('success');
+})
 
 
 // Kakao 로그인 요청 처리
